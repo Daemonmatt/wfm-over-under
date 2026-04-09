@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="css/styles.css?v=5" />
+    <link rel="stylesheet" href="css/styles.css?v=6" />
   </head>
   <body>
     <div class="layout">
@@ -57,6 +57,19 @@
           <strong>Hybrid:</strong> max(simple, Erlang) — common default to avoid understaffing.<br />
           <strong>Chat:</strong> required chat HC = base ÷ concurrency (case unchanged).
         </p>
+
+        <h2>Overall HC — combined volume</h2>
+        <p class="hint">
+          Optional <strong>day totals</strong> per channel. Required HC uses the same <strong>model</strong> above.
+          Totals ÷ operating hours → average hourly workload. Use <strong>0</strong> to take HC from the grid only
+          (respects <strong>Team</strong> filter in summary).
+        </p>
+        <label for="manualCaseVol">Case volume (combined)</label>
+        <input type="number" id="manualCaseVol" min="0" step="1" value="0" />
+        <label for="manualChatVol">Chat volume (combined)</label>
+        <input type="number" id="manualChatVol" min="0" step="1" value="0" />
+        <label for="spreadHours">Operating hours (spread)</label>
+        <input type="number" id="spreadHours" min="1" max="24" step="1" value="24" />
 
         <hr />
         <h2>Upload CSV</h2>
@@ -119,6 +132,14 @@
             <div class="l">Largest gap (under)</div>
             <div class="v" id="mWorst">—</div>
           </div>
+          <div class="metric metric-hc-case">
+            <div class="l">Required HC (Case)</div>
+            <div class="v" id="mHcCase">0.00</div>
+          </div>
+          <div class="metric metric-hc-chat">
+            <div class="l">Required HC (Chat)</div>
+            <div class="v" id="mHcChat">0.00</div>
+          </div>
         </div>
 
         <div class="tabs">
@@ -173,7 +194,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- ?v= bumps cache when JS/CSS change (GitHub Pages CDN/browser cache) -->
-    <script src="js/app.js?v=5"></script>
+    <script src="js/app.js?v=6"></script>
     <script>
       document.getElementById("today").textContent = new Date().toLocaleDateString(undefined, {
         weekday: "long",

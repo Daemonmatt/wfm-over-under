@@ -402,6 +402,14 @@ h1 {
   background: linear-gradient(90deg, #d97706, #fbbf24);
 }
 
+.metric.metric-hc-case::before {
+  background: linear-gradient(90deg, #4f46e5, #818cf8);
+}
+
+.metric.metric-hc-chat::before {
+  background: linear-gradient(90deg, #0d9488, #2dd4bf);
+}
+
 .metric .v {
   font-size: 1.4rem;
   font-weight: 700;

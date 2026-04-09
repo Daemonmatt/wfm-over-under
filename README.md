@@ -6,6 +6,8 @@
 
 That URL serves the **static** app from the [`docs/`](docs/) folder (HTML + JavaScript). Your teammates only need a browser.
 
+**Note:** Features are implemented in both **`docs/`** (GitHub Pages) and optional **`app.py`** (Streamlit local). After pulling changes, hard-refresh the Pages site (`Cmd+Shift+R`) so `app.js?v=…` updates load.
+
 ---
 
 ## Enable the link (one-time)

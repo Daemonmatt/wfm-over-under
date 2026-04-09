@@ -410,6 +410,25 @@
       });
   }
 
+  function summaryHcCaseChat(fullRows, teamFilter, manualCaseVol, manualChatVol, spreadHours) {
+    var p = getHcParams();
+    var sh = Math.max(1, Math.min(24, Math.floor(Number(spreadHours) || 24)));
+    var mc = Number(manualCaseVol) || 0;
+    var mh = Number(manualChatVol) || 0;
+    var d = fullRows.filter(function (r) {
+      return teamFilter === "all" || (r.team || DEFAULT_TEAM) === teamFilter;
+    });
+    var gridCase = 0;
+    var gridChat = 0;
+    d.forEach(function (r) {
+      if (r.channel === "case") gridCase += r.hc_required;
+      else if (r.channel === "chat") gridChat += r.hc_required;
+    });
+    var hcC = mc > 1e-12 ? requiredHcForVolume(mc / sh, p, "case") : gridCase;
+    var hcH = mh > 1e-12 ? requiredHcForVolume(mh / sh, p, "chat") : gridChat;
+    return { hcCase: hcC, hcChat: hcH };
+  }
+
   function filterView(rowsWithMetrics, channel, team) {
     var filtered = rowsWithMetrics.filter(function (r) {
       var tm = r.team || DEFAULT_TEAM;
@@ -449,6 +468,9 @@
     chatConcurrency: 2,
     channelFilter: "all",
     teamFilter: "all",
+    manualCaseVol: 0,
+    manualChatVol: 0,
+    spreadHours: 24,
   };
 
   let chartLine = null;
@@ -739,6 +761,18 @@
     document.getElementById("mUnder").textContent = String(under);
     document.getElementById("mWorst").textContent = worst ? fmtNum(worst.variance) : "—";
 
+    var sumHc = summaryHcCaseChat(
+      full,
+      state.teamFilter,
+      state.manualCaseVol,
+      state.manualChatVol,
+      state.spreadHours
+    );
+    var elHcC = document.getElementById("mHcCase");
+    var elHcH = document.getElementById("mHcChat");
+    if (elHcC) elHcC.textContent = fmtHc(sumHc.hcCase);
+    if (elHcH) elHcH.textContent = fmtHc(sumHc.hcChat);
+
     var chName =
       state.channelFilter === "all"
         ? "All channels"
@@ -787,6 +821,11 @@
     return Math.abs(x - Math.round(x)) < 1e-6 ? String(Math.round(x)) : x.toFixed(2);
   }
 
+  function fmtHc(x) {
+    if (typeof x !== "number" || isNaN(x)) return "—";
+    return x.toFixed(2);
+  }
+
   function readFile(f, cb) {
     const r = new FileReader();
     r.onload = function () {
@@ -829,6 +868,19 @@
       state.serviceTimeSec = parseFloat(document.getElementById("svcTime").value) || 15;
       renderTable();
     });
+    document.getElementById("manualCaseVol").addEventListener("input", function () {
+      state.manualCaseVol = parseFloat(document.getElementById("manualCaseVol").value) || 0;
+      renderTable();
+    });
+    document.getElementById("manualChatVol").addEventListener("input", function () {
+      state.manualChatVol = parseFloat(document.getElementById("manualChatVol").value) || 0;
+      renderTable();
+    });
+    document.getElementById("spreadHours").addEventListener("input", function () {
+      var v = parseInt(document.getElementById("spreadHours").value, 10);
+      state.spreadHours = isNaN(v) ? 24 : Math.max(1, Math.min(24, v));
+      renderTable();
+    });
     document.getElementById("channelFilter").addEventListener("change", function () {
       state.channelFilter = document.getElementById("channelFilter").value;
       renderTable();
@@ -865,6 +917,12 @@
 
     document.getElementById("btnReset").addEventListener("click", function () {
       state.rows = buildEmptyFrame();
+      state.manualCaseVol = 0;
+      state.manualChatVol = 0;
+      state.spreadHours = 24;
+      document.getElementById("manualCaseVol").value = "0";
+      document.getElementById("manualChatVol").value = "0";
+      document.getElementById("spreadHours").value = "24";
       renderTable();
     });
 
@@ -895,6 +953,9 @@
     document.getElementById("chatConc").value = String(state.chatConcurrency);
     document.getElementById("sla").value = String(state.slaTarget);
     document.getElementById("svcTime").value = String(state.serviceTimeSec);
+    document.getElementById("manualCaseVol").value = String(state.manualCaseVol);
+    document.getElementById("manualChatVol").value = String(state.manualChatVol);
+    document.getElementById("spreadHours").value = String(state.spreadHours);
     syncErlangInputsDisabled();
     renderTable();
   }
