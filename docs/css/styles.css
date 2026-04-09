@@ -217,8 +217,9 @@ table.data td {
   border-bottom: 1px solid var(--border);
 }
 
-table.data th:first-child,
-table.data td:first-child {
+/* Time, Channel, Team: labels left; numeric columns stay right */
+table.data th:nth-child(-n + 3),
+table.data td:nth-child(-n + 3) {
   text-align: left;
 }
 
