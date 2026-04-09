@@ -120,6 +120,12 @@ h1 {
   margin-bottom: 1rem;
 }
 
+.filter-foot {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0.5rem 0 0;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

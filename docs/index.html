@@ -12,16 +12,50 @@
         <h2>Plan</h2>
         <p style="font-size: 0.9rem; margin: 0 0 1rem; color: var(--muted)" id="today"></p>
 
-        <h2>Demand → HC</h2>
+        <h2>Required HC model</h2>
+        <label for="hcModel">Model</label>
+        <select id="hcModel">
+          <option value="simple" selected>Simple workload</option>
+          <option value="erlang">Erlang C + SLA</option>
+          <option value="hybrid">Hybrid (max: workload &amp; SLA)</option>
+        </select>
+
+        <h2>Demand inputs</h2>
         <label for="aht">AHT (seconds)</label>
         <input type="number" id="aht" min="1" max="7200" step="1" value="300" />
         <label for="shrink">Shrinkage (%)</label>
         <input type="number" id="shrink" min="0" max="50" step="1" value="15" />
-        <p class="hint">Required HC = (volume × AHT ÷ 3600) ÷ (1 − shrinkage)</p>
+
+        <h2>Occupancy &amp; utilization</h2>
+        <label for="occ">Occupancy target (%)</label>
+        <input type="number" id="occ" min="5" max="100" step="1" value="100" />
+        <label for="util">Utilization target (%)</label>
+        <input type="number" id="util" min="5" max="100" step="1" value="100" />
+
+        <h2>Chat concurrency</h2>
+        <label for="chatConc">Concurrent chats per agent (chat only)</label>
+        <input type="number" id="chatConc" min="1" max="20" step="0.5" value="2" />
+
+        <h2>Queue SLA</h2>
+        <p class="hint" id="erlangHint">Used for <strong>Erlang C + SLA</strong> and <strong>Hybrid</strong>.</p>
+        <label for="sla">SLA target (0–1, e.g. 0.95)</label>
+        <input type="number" id="sla" min="0.5" max="0.999" step="0.01" value="0.95" />
+        <label for="svcTime">Service time (seconds)</label>
+        <input type="number" id="svcTime" min="0" max="3600" step="1" value="15" />
+
+        <p class="hint">
+          <strong>Simple:</strong> workload FTE only.<br />
+          <strong>Erlang:</strong> queue/SLA sizing, then shrinkage / occupancy / utilization.<br />
+          <strong>Hybrid:</strong> max(simple, Erlang) — common default to avoid understaffing.<br />
+          <strong>Chat:</strong> required chat HC = base ÷ concurrency (case unchanged).
+        </p>
 
         <hr />
         <h2>Upload CSV</h2>
-        <p class="hint">Include <strong>channel</strong> (case / chat) or same values apply to both.</p>
+        <p class="hint">
+          Include <strong>channel</strong> and optional <strong>team</strong> (default team slug: <code>primary</code>), or
+          legacy files without channel apply to both channels.
+        </p>
         <label>① Hourly volume</label>
         <input type="file" id="volFile" accept=".csv,text/csv" />
         <label>② Staffing by hour</label>
@@ -46,6 +80,10 @@
             <option value="all">All channels</option>
             <option value="case">Case</option>
             <option value="chat">Chat</option>
+          </select>
+          <label for="teamFilter">Team</label>
+          <select id="teamFilter">
+            <option value="all">All teams</option>
           </select>
         </div>
 
@@ -75,14 +113,16 @@
 
         <div id="panelGrid" class="panel active">
           <p class="hint" id="gridHint">
-            <strong>All channels</strong> shows hourly totals. Choose <strong>Case</strong> or <strong>Chat</strong> to edit
-            volume and staff.
+            Use <strong>All channels</strong> + <strong>All teams</strong> for hourly totals (read-only). Pick a specific
+            <strong>channel</strong> and <strong>team</strong> to edit volume and staff.
           </p>
           <div style="overflow-x: auto">
             <table class="data">
               <thead>
                 <tr>
                   <th>Time</th>
+                  <th>Channel</th>
+                  <th>Team</th>
                   <th>Volume</th>
                   <th>HC required</th>
                   <th>Staff available</th>
@@ -93,6 +133,7 @@
               <tbody id="tbody"></tbody>
             </table>
           </div>
+          <p class="filter-foot" id="filterActive" aria-live="polite"></p>
         </div>
 
         <div id="panelCharts" class="panel">

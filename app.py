@@ -1,6 +1,7 @@
 """
-One-day WFM view: hourly volume upload, staffing (by hour or shifts), required HC from AHT,
-and hourly over- / under-staffing vs available roster. Supports channels (e.g. case, chat).
+One-day WFM view: hourly volume upload, staffing (by hour or shifts), required HC
+(simple, Erlang C + SLA, or hybrid max), occupancy/utilization, and hourly over- / under-staffing.
+Supports channels (e.g. case, chat).
 """
 
 from __future__ import annotations
@@ -14,17 +15,19 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 from wfm_core import (
+    HCParams,
     SAMPLE_STAFF_CSV,
     SAMPLE_VOL_CSV,
     add_metrics,
     apply_shift_counts_split,
     build_empty_frame,
-    filter_by_channel,
+    filter_view,
     hour_label,
     merge_hourly_volume,
     merge_staff_by_hour,
     sample_pack_zip_bytes,
     shifts_to_hourly_counts,
+    team_display_label,
     template_shifts,
     template_staff_by_channel,
     template_staff_hour,
@@ -47,6 +50,7 @@ st.markdown(
     .wfm-title { font-size: 1.6rem; font-weight: 650; letter-spacing: -0.02em;
       color: #0f172a; margin-bottom: 0.1rem; }
     .wfm-sub { color: #64748b; font-size: 0.92rem; margin-bottom: 1rem; }
+    .wfm-filter-foot { color: #64748b; font-size: 0.88rem; margin-top: 0.35rem; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -71,29 +75,109 @@ with st.sidebar:
     )
     st.session_state.plan_date = plan_date
 
-    st.markdown("### Demand → required HC")
+    st.markdown("### Required HC model")
+    hc_model_label = st.radio(
+        "Model",
+        (
+            "Simple workload",
+            "Erlang C + SLA",
+            "Hybrid (max: workload & SLA)",
+        ),
+        index=0,
+        help="Simple: pure workload FTE. Erlang C: queue/SLA sizing (M/M/c). Hybrid: max(workload, Erlang) — "
+        "common in WFM tools to avoid understaffing when one method is optimistic.",
+    )
+    _model_map = {
+        "Simple workload": "simple",
+        "Erlang C + SLA": "erlang",
+        "Hybrid (max: workload & SLA)": "hybrid",
+    }
+    hc_model = _model_map[hc_model_label]
+    _sla_inputs_active = hc_model in ("erlang", "hybrid")
+
+    st.markdown("### Demand inputs")
     aht_sec = st.number_input(
         "AHT (seconds)",
         min_value=1.0,
         max_value=7200.0,
         value=300.0,
         step=1.0,
-        help="Required FTE per hour ≈ (volume × AHT) ÷ 3600, before shrinkage (same for all channels unless you export and model separately).",
+        help="Average handle time per work unit (call/chat). Used for workload and Erlang offered load.",
     )
     shrink_pct = st.slider(
         "Shrinkage (%)",
         min_value=0,
         max_value=50,
         value=15,
-        help="Non-productive time (breaks, meetings). Required HC = raw ÷ (1 − shrinkage).",
+        help="Non-productive time. After base HC, divide by (1 − shrinkage).",
     )
     shrinkage = shrink_pct / 100.0
+
+    st.markdown("### Occupancy & utilization")
+    occ_pct = st.slider(
+        "Occupancy target (%)",
+        min_value=5,
+        max_value=100,
+        value=100,
+        help="Share of logged-in time spent on handled work. Required HC is divided by this (e.g. 85% → divide by 0.85). 100% = no adjustment.",
+    )
+    util_pct = st.slider(
+        "Utilization target (%)",
+        min_value=5,
+        max_value=100,
+        value=100,
+        help="Scheduled productive utilization target. Required HC is divided by this. 100% = no adjustment.",
+    )
+
+    st.markdown("### Chat concurrency (messaging)")
+    chat_concurrency = st.number_input(
+        "Concurrent chats per agent (chat only)",
+        min_value=1.0,
+        max_value=20.0,
+        value=2.0,
+        step=0.5,
+        help="Typical WFM rule: one agent handles N simultaneous chat sessions. "
+        "Required **chat** HC = base requirement ÷ N. **Case** is unchanged. "
+        "All channels view sums case HC + chat HC.",
+    )
+
+    st.markdown("### Queue SLA (Erlang & Hybrid models)")
+    sla_target = st.number_input(
+        "SLA target (fraction answered within service time)",
+        min_value=0.5,
+        max_value=0.999,
+        value=0.95,
+        step=0.01,
+        format="%.3f",
+        help="e.g. 0.95 = 95% of contacts answered within the service time threshold.",
+        disabled=not _sla_inputs_active,
+    )
+    service_time_sec = st.number_input(
+        "Service time (seconds)",
+        min_value=0.0,
+        max_value=3600.0,
+        value=15.0,
+        step=1.0,
+        help="Target max answer/wait time for the SLA (e.g. 15 s).",
+        disabled=not _sla_inputs_active,
+    )
+
+    hc_params = HCParams(
+        model=hc_model,
+        aht_sec=float(aht_sec),
+        shrinkage=float(shrinkage),
+        occupancy=occ_pct / 100.0,
+        utilization=util_pct / 100.0,
+        sla_target=float(sla_target),
+        service_time_sec=float(service_time_sec),
+        chat_concurrency=float(chat_concurrency),
+    )
 
     st.markdown("---")
     st.markdown("### Uploads (CSV / Excel)")
     st.caption(
-        "Include a **channel** column (`case` or `chat`; also accepts ticket/email → case, messaging → chat). "
-        "Legacy files without **channel** apply the same values to **both** channels."
+        "Include **channel** (`case` / `chat`) and optional **team** (e.g. `primary`, `north`). "
+        "Without **channel**, values apply to both channels; without **team**, rows use team **primary**."
     )
 
     f_vol = st.file_uploader("① Hourly volume", type=["csv", "xlsx", "xls"])
@@ -210,7 +294,7 @@ if f_staff is not None:
 for e in err:
     st.error(e)
 
-df_full = add_metrics(st.session_state.wfm_df.copy(), aht_sec, shrinkage)
+df_full = add_metrics(st.session_state.wfm_df.copy(), hc_params)
 
 st.markdown(
     '<p class="wfm-title">Daily staffing vs demand</p>', unsafe_allow_html=True
@@ -223,54 +307,71 @@ st.markdown(
 )
 
 ch_display = {"all": "All channels", "case": "Case", "chat": "Chat"}
-channel_filter = st.selectbox(
-    "Channel",
-    options=["all", "case", "chat"],
-    index=0,
-    format_func=lambda k: ch_display[k],
-    help="All channels: hourly totals. Case/Chat: that channel only (edit grid here).",
-)
 
-view_df = filter_by_channel(df_full, channel_filter, aht_sec, shrinkage)
+
+def grid_team_label(t) -> str:
+    if str(t) == "all":
+        return "All teams"
+    return team_display_label(str(t))
+
+
+ft_col1, ft_col2 = st.columns(2)
+with ft_col1:
+    channel_filter = st.selectbox(
+        "Channel",
+        options=["all", "case", "chat"],
+        index=0,
+        format_func=lambda k: ch_display[k],
+        help="All channels: hourly totals across case + chat. Case/Chat: that channel only.",
+    )
+with ft_col2:
+    _teams = sorted(set(df_full["team"].astype(str).unique()))
+    team_filter_options = ["all"] + [t for t in _teams if t != "all"]
+    team_filter = st.selectbox(
+        "Team",
+        options=team_filter_options,
+        index=0,
+        format_func=lambda k: "All teams" if k == "all" else team_display_label(k),
+        help="Filter to one team or show all teams (aggregated per hour). Edit grid when both channel and team are specific.",
+    )
+
+view_df = filter_view(df_full, channel_filter, team_filter, hc_params)
 
 tab_grid, tab_charts = st.tabs(["Hourly grid", "Charts"])
 
 with tab_grid:
-    if channel_filter == "all":
+    _readonly = channel_filter == "all" or team_filter == "all"
+    if _readonly:
         st.caption(
-            "Totals combine **case + chat**. Select **Case** or **Chat** in the dropdown above to edit values."
+            "Aggregated view (read-only). Choose a **specific channel** and **specific team** to edit volume and staff in the grid."
         )
-        show = view_df[
-            [
-                "interval",
-                "volume",
-                "hc_required",
-                "staff_available",
-                "variance",
-                "status",
-            ]
-        ].copy()
-        show.columns = [
-            "Time",
-            "Volume (total)",
-            "HC required (total)",
-            "Staff available (total)",
-            "Variance",
-            "Status",
-        ]
+        show = pd.DataFrame(
+            {
+                "Time": view_df["interval"],
+                "Channel": view_df["channel"].map(lambda c: ch_display.get(c, str(c))),
+                "Team": view_df["team"].map(grid_team_label),
+                "Volume (view)": view_df["volume"],
+                "HC required (view)": view_df["hc_required"],
+                "Staff available (view)": view_df["staff_available"],
+                "Variance": view_df["variance"],
+                "Status": view_df["status"],
+            }
+        )
         st.dataframe(show, use_container_width=True, hide_index=True)
     else:
         st.caption(
-            f"Editing **{ch_display[channel_filter]}**. Required HC uses the same AHT and shrinkage as the sidebar."
+            f"Editing **{ch_display[channel_filter]} · {team_display_label(team_filter)}**. "
+            "Required HC uses the sidebar model and parameters."
         )
-        edit_df = view_df[
-            ["interval", "volume", "staff_available", "hour", "channel"]
-        ].copy()
+        edit_df = view_df[["interval", "volume", "staff_available", "hour"]].copy()
+        edit_df.insert(1, "Channel", ch_display[channel_filter])
+        edit_df.insert(2, "Team", grid_team_label(team_filter))
         edited = st.data_editor(
             edit_df.set_index("hour"),
             column_config={
                 "interval": st.column_config.TextColumn("Time", disabled=True),
-                "channel": st.column_config.TextColumn("Channel", disabled=True),
+                "Channel": st.column_config.TextColumn("Channel", disabled=True),
+                "Team": st.column_config.TextColumn("Team", disabled=True),
                 "volume": st.column_config.NumberColumn(
                     "Volume (work units)", min_value=0.0, format="%.1f"
                 ),
@@ -281,54 +382,58 @@ with tab_grid:
             hide_index=False,
             use_container_width=True,
             num_rows="fixed",
-            key=f"grid_{channel_filter}",
+            key=f"grid_{channel_filter}_{team_filter}",
         )
         out = edited.reset_index()
         for _, row in out.iterrows():
             h = int(row["hour"])
-            ch = str(row["channel"])
-            m = (st.session_state.wfm_df["hour"] == h) & (
-                st.session_state.wfm_df["channel"] == ch
+            m = (
+                (st.session_state.wfm_df["hour"] == h)
+                & (st.session_state.wfm_df["channel"] == channel_filter)
+                & (st.session_state.wfm_df["team"].astype(str) == team_filter)
             )
             st.session_state.wfm_df.loc[m, "volume"] = float(row["volume"])
             st.session_state.wfm_df.loc[m, "staff_available"] = float(
                 row["staff_available"]
             )
-        df_full = add_metrics(st.session_state.wfm_df.copy(), aht_sec, shrinkage)
-        view_df = filter_by_channel(df_full, channel_filter, aht_sec, shrinkage)
+        df_full = add_metrics(st.session_state.wfm_df.copy(), hc_params)
+        view_df = filter_view(df_full, channel_filter, team_filter, hc_params)
 
         st.markdown("##### Hourly result")
-        disp = view_df[
-            [
-                "interval",
-                "volume",
-                "hc_required",
-                "staff_available",
-                "variance",
-                "status",
-            ]
-        ].copy()
-        disp.columns = [
-            "Time",
-            "Volume",
-            "HC required",
-            "Staff available",
-            "Variance",
-            "Status",
-        ]
+        disp = pd.DataFrame(
+            {
+                "Time": view_df["interval"],
+                "Channel": view_df["channel"].map(lambda c: ch_display.get(c, str(c))),
+                "Team": view_df["team"].map(grid_team_label),
+                "Volume": view_df["volume"],
+                "HC required": view_df["hc_required"],
+                "Staff available": view_df["staff_available"],
+                "Variance": view_df["variance"],
+                "Status": view_df["status"],
+            }
+        )
         st.dataframe(disp, use_container_width=True, hide_index=True)
+
+    _ft_team = "All teams" if team_filter == "all" else team_display_label(team_filter)
+    st.markdown(
+        f'<p class="wfm-filter-foot">Active filters · <strong>Channel:</strong> {ch_display[channel_filter]} · <strong>Team:</strong> {_ft_team}</p>',
+        unsafe_allow_html=True,
+    )
 
     st.markdown("##### Summary")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Total volume (view)", f"{view_df['volume'].sum():,.1f}")
     c2.metric("Hours over-staffed", f"{(view_df['variance'] > 1e-6).sum()}")
     c3.metric("Hours under-staffed", f"{(view_df['variance'] < -1e-6).sum()}")
-    worst = view_df.loc[view_df["variance"].idxmin()]
-    c4.metric(
-        "Largest gap (under)",
-        f"{worst['variance']:.2f}",
-        help="Most negative variance in this view",
-    )
+    if len(view_df) > 0:
+        worst = view_df.loc[view_df["variance"].idxmin()]
+        c4.metric(
+            "Largest gap (under)",
+            f"{worst['variance']:.2f}",
+            help="Most negative variance in this view",
+        )
+    else:
+        c4.metric("Largest gap (under)", "—")
 
     x1, x2 = st.columns(2)
     csv_out = df_full.to_csv(index=False).encode("utf-8")
@@ -497,6 +602,7 @@ with tab_charts:
 
 st.markdown("---")
 st.caption(
-    "**HC required** = (hourly volume × AHT ÷ 3600) ÷ (1 − shrinkage). "
-    "**All channels** sums case + chat per hour. Shift uploads split headcount evenly between case and chat."
+    "**Simple:** workload FTE. **Erlang C + SLA:** queue sizing for the SLA. **Hybrid:** max(simple, Erlang). "
+    "**Chat** required HC = base ÷ concurrent chats per agent (case unchanged). "
+    "**All channels** sums case HC + chat HC per hour. Shift uploads split headcount evenly between case and chat."
 )
