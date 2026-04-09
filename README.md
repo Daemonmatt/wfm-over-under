@@ -1,25 +1,41 @@
 # WFM dashboard
 
-Single-day workforce management: hourly **volume** and **staffing** by channel (**case** & **chat**), **HC required** from AHT + shrinkage, and **variance** (over/under).
+**Team app link (no Streamlit):** after you enable GitHub Pages on this repo, share:
 
-## Share with your team (recommended): GitHub Pages
+### → [https://daemonmatt.github.io/wfm-over-under/](https://daemonmatt.github.io/wfm-over-under/)
 
-Git stores the code; a **shareable app link** comes from hosting the static site in the `docs/` folder.
+That URL serves the **static** app from the [`docs/`](docs/) folder (HTML + JavaScript). Your teammates only need a browser.
 
-1. Push this repo to GitHub (already set up for [Daemonmatt/wfm-over-under](https://github.com/Daemonmatt/wfm-over-under)).
-2. In the repo: **Settings → Pages**.
-3. **Build and deployment**: Source = **Deploy from a branch**, Branch = **main**, folder = **/docs** → Save.
-4. After a minute, GitHub shows a URL like:
+---
 
-   **`https://daemonmatt.github.io/wfm-over-under/`**
+## Enable the link (one-time)
 
-   Share that link with your team. The app runs entirely in the browser (no Streamlit server, no login required for basic use).
+| Step | Action |
+|------|--------|
+| 1 | Repo **Settings** → **Pages** |
+| 2 | **Build and deployment** → Source: **Deploy from a branch** |
+| 3 | Branch **main**, folder **`/docs`** → **Save** |
+| 4 | Wait ~1 minute; refresh if you see 404 |
 
-To update the live site: `git push` to `main`; Pages rebuilds automatically.
+Updates: every `git push` to `main` refreshes the site automatically.
 
-## Run locally (optional): Python + Streamlit
+**Do not use** [Streamlit Cloud](https://share.streamlit.io) for the shared link unless you explicitly want Streamlit hosting — this project’s **recommended** sharing path is **GitHub Pages** above.
 
-For development or offline use:
+---
+
+## What this repo contains
+
+| Use case | Where |
+|----------|--------|
+| **Share with team (browser)** | `docs/` → GitHub Pages → link above |
+| Optional: run Streamlit locally | `app.py` (see below) |
+| Python logic & tests | `wfm_core.py`, `sanity_check.py` |
+
+---
+
+## Optional: run Streamlit on your machine only
+
+For local development—not required for the team link:
 
 ```bash
 cd wfm-dashboard
@@ -27,17 +43,21 @@ python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Or: `./run.sh` (default port 8511).
+Or: `./run.sh` (default port **8511**).
 
-## Open the static app locally
+---
 
-Open `docs/index.html` in a browser, or from the repo folder run:
+## Open the static app on your computer
+
+Double-click `docs/index.html`, or:
 
 ```bash
 cd docs && python3 -m http.server 8080
 ```
 
-Then visit `http://localhost:8080`.
+Then open `http://localhost:8080`.
+
+---
 
 ## Sanity check (Python)
 
@@ -49,7 +69,14 @@ python sanity_check.py
 
 | Path | Purpose |
 |------|--------|
-| `docs/` | **Static web app** (GitHub Pages) — `index.html`, `js/app.js`, samples |
-| `app.py` | Streamlit UI (optional) |
-| `wfm_core.py` | Shared Python logic |
-| `sample_data/` | CSV samples for Streamlit / tests |
+| **`docs/`** | **Web app** for GitHub Pages (`index.html`, `js/app.js`, `samples/`) |
+| `app.py` | Optional Streamlit UI |
+| `wfm_core.py` | Python logic |
+| `sample_data/` | CSV samples for tests / Streamlit |
+
+---
+
+### If GitHub still shows an old README
+
+Hard-refresh the repo page (`Cmd+Shift+R` / `Ctrl+Shift+R`) or open the raw file:  
+`https://github.com/Daemonmatt/wfm-over-under/blob/main/README.md`
