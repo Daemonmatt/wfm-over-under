@@ -1,0 +1,247 @@
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --green: #059669;
+  --red: #b91c1c;
+  --accent: #2563eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.45;
+  min-height: 100vh;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 300px) 1fr;
+  gap: 0;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1.25rem;
+}
+
+.sidebar h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.sidebar label {
+  display: block;
+  font-size: 0.88rem;
+  margin-bottom: 0.35rem;
+  color: var(--text);
+}
+
+.sidebar input[type="number"],
+.sidebar select {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.sidebar input[type="file"] {
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.sidebar .hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: -0.5rem 0 1rem;
+}
+
+.sidebar hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1rem 0;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.45rem 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  text-decoration: none;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.btn.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+main {
+  padding: 1.25rem 1.5rem 2rem;
+  max-width: 1200px;
+}
+
+h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+  font-weight: 650;
+}
+
+.sub {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.toolbar label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.toolbar select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.metric .v {
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.metric .l {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tabs button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tabs button.active {
+  border-bottom-color: var(--surface);
+  font-weight: 600;
+}
+
+.panel {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 8px 8px 8px;
+  padding: 1rem;
+}
+
+.panel.active {
+  display: block;
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+table.data th,
+table.data td {
+  padding: 0.45rem 0.5rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+table.data th:first-child,
+table.data td:first-child {
+  text-align: left;
+}
+
+table.data th {
+  background: #f1f5f9;
+  font-weight: 600;
+}
+
+table.data input {
+  width: 4.5rem;
+  padding: 0.2rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 280px;
+  margin-bottom: 1rem;
+}
+
+.caption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+footer {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}

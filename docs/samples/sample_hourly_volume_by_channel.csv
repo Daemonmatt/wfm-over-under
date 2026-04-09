@@ -1,0 +1,21 @@
+hour,interval,channel,volume
+8,8:00 AM,case,12
+8,8:00 AM,chat,6
+9,9:00 AM,case,20
+9,9:00 AM,chat,12
+10,10:00 AM,case,28
+10,10:00 AM,chat,17
+11,11:00 AM,case,24
+11,11:00 AM,chat,14
+12,12:00 PM,case,18
+12,12:00 PM,chat,10
+13,1:00 PM,case,22
+13,1:00 PM,chat,13
+14,2:00 PM,case,26
+14,2:00 PM,chat,16
+15,3:00 PM,case,25
+15,3:00 PM,chat,15
+16,4:00 PM,case,20
+16,4:00 PM,chat,13
+17,5:00 PM,case,14
+17,5:00 PM,chat,8
