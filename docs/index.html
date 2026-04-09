@@ -3,14 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1e293b" />
     <title>WFM — Daily staffing vs demand</title>
-    <link rel="stylesheet" href="css/styles.css?v=4" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css?v=5" />
   </head>
   <body>
     <div class="layout">
       <aside class="sidebar">
+        <div class="sidebar-brand">Workforce</div>
         <h2>Plan</h2>
-        <p style="font-size: 0.9rem; margin: 0 0 1rem; color: var(--muted)" id="today"></p>
+        <p class="sidebar-today" id="today"></p>
 
         <h2>Required HC model</h2>
         <label for="hcModel">Model</label>
@@ -68,23 +76,30 @@
         <a class="btn secondary" href="samples/sample_staff_by_hour_by_channel.csv" download>Staffing sample</a>
       </aside>
 
-      <main>
-        <h1>Daily staffing vs demand</h1>
+      <main class="main-area">
+        <div class="main-inner">
+        <header class="page-header">
+      <h1>Daily staffing vs demand</h1>
         <p class="sub">
           Channels: <strong>case</strong> &amp; <strong>chat</strong>. Variance = staff available − HC required.
         </p>
+        </header>
 
         <div class="toolbar">
+          <div>
           <label for="channelFilter">Channel</label>
           <select id="channelFilter">
             <option value="all">All channels</option>
             <option value="case">Case</option>
             <option value="chat">Chat</option>
           </select>
+          </div>
+          <div>
           <label for="teamFilter">Team</label>
           <select id="teamFilter">
             <option value="all">All teams</option>
           </select>
+          </div>
         </div>
 
         <div class="metrics">
@@ -116,7 +131,7 @@
             Use <strong>All channels</strong> + <strong>All teams</strong> for hourly totals (read-only). Pick a specific
             <strong>channel</strong> and <strong>team</strong> to edit volume and staff.
           </p>
-          <div style="overflow-x: auto">
+          <div class="table-scroll">
             <table class="data">
               <thead>
                 <tr>
@@ -152,12 +167,13 @@
           Static web app — runs in the browser; no server. Deploy this repo with
           <strong>GitHub Pages</strong> (folder <code>/docs</code>) and share the Pages URL with your team.
         </footer>
+        </div>
       </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- ?v= bumps cache when JS/CSS change (GitHub Pages CDN/browser cache) -->
-    <script src="js/app.js?v=4"></script>
+    <script src="js/app.js?v=5"></script>
     <script>
       document.getElementById("today").textContent = new Date().toLocaleDateString(undefined, {
         weekday: "long",

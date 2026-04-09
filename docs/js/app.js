@@ -496,6 +496,9 @@
     const barCtx = document.getElementById("chartBar");
     if (!lineCtx || !barCtx) return;
 
+    var chartInk = "#1e293b";
+    var chartGrid = "#e2e8f0";
+
     chartLine = new Chart(lineCtx, {
       type: "line",
       data: {
@@ -505,44 +508,50 @@
             label: "Staff available",
             data: staff,
             borderColor: "#059669",
-            backgroundColor: "rgba(5, 150, 105, 0.1)",
-            tension: 0.15,
+            backgroundColor: "rgba(5, 150, 105, 0.12)",
+            tension: 0.2,
             pointRadius: 4,
-            borderWidth: 2,
+            pointHoverRadius: 6,
+            borderWidth: 2.5,
           },
           {
             label: "HC required",
             data: req,
-            borderColor: "#b91c1c",
-            backgroundColor: "rgba(185, 28, 28, 0.06)",
-            tension: 0.15,
+            borderColor: "#c2410c",
+            backgroundColor: "rgba(194, 65, 12, 0.08)",
+            tension: 0.2,
             pointRadius: 4,
-            borderWidth: 2,
+            pointHoverRadius: 6,
+            borderWidth: 2.5,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
         plugins: {
-          legend: { position: "top", labels: { color: "#0f172a", font: { size: 12 } } },
+          legend: {
+            position: "top",
+            labels: { color: chartInk, font: { size: 12, family: "'Plus Jakarta Sans', system-ui, sans-serif" } },
+          },
           title: {
             display: true,
             text: "Staff vs requirement (FTE)",
-            color: "#0f172a",
-            font: { size: 14, weight: "600" },
+            color: chartInk,
+            font: { size: 15, weight: "600", family: "'Plus Jakarta Sans', system-ui, sans-serif" },
           },
         },
         scales: {
           x: {
-            title: { display: true, text: "Hour of day", color: "#0f172a" },
-            ticks: { color: "#0f172a", maxRotation: 45, minRotation: 45, font: { size: 10 } },
-            grid: { color: "#e2e8f0" },
+            title: { display: true, text: "Hour of day", color: chartInk, font: { size: 11 } },
+            ticks: { color: chartInk, maxRotation: 45, minRotation: 45, font: { size: 10 } },
+            grid: { color: chartGrid },
           },
           y: {
-            title: { display: true, text: "FTE (headcount)", color: "#0f172a" },
-            ticks: { color: "#0f172a" },
-            grid: { color: "#e2e8f0" },
+            title: { display: true, text: "FTE (headcount)", color: chartInk, font: { size: 11 } },
+            ticks: { color: chartInk },
+            grid: { color: chartGrid },
             beginAtZero: true,
           },
         },
@@ -558,33 +567,36 @@
             label: "Variance",
             data: variance,
             backgroundColor: variance.map(function (v) {
-              return v >= 0 ? "#15803d" : "#b91c1c";
+              return v >= 0 ? "#059669" : "#dc2626";
             }),
+            borderRadius: 4,
+            borderSkipped: false,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
         plugins: {
           legend: { display: false },
           title: {
             display: true,
             text: "Variance (FTE) — green = over, red = under",
-            color: "#0f172a",
-            font: { size: 14, weight: "600" },
+            color: chartInk,
+            font: { size: 15, weight: "600", family: "'Plus Jakarta Sans', system-ui, sans-serif" },
           },
         },
         scales: {
           x: {
-            title: { display: true, text: "Hour of day", color: "#0f172a" },
-            ticks: { color: "#0f172a", maxRotation: 45, minRotation: 45, font: { size: 10 } },
+            title: { display: true, text: "Hour of day", color: chartInk, font: { size: 11 } },
+            ticks: { color: chartInk, maxRotation: 45, minRotation: 45, font: { size: 10 } },
             grid: { display: false },
           },
           y: {
-            title: { display: true, text: "Variance (FTE)", color: "#0f172a" },
-            ticks: { color: "#0f172a" },
-            grid: { color: "#e2e8f0" },
+            title: { display: true, text: "Variance (FTE)", color: chartInk, font: { size: 11 } },
+            ticks: { color: chartInk },
+            grid: { color: chartGrid },
           },
         },
       },
