@@ -132,6 +132,48 @@ def _chat_concurrency_factor(p: HCParams) -> float:
     return max(1.0, c)
 
 
+def summary_hc_case_chat(
+    df_full: pd.DataFrame,
+    p: HCParams,
+    team_filter: str,
+    manual_case_vol: float,
+    manual_chat_vol: float,
+    spread_hours: int,
+) -> tuple[float, float, str, str]:
+    """
+    Overall required HC for Case vs Chat for the day.
+
+    If manual volume for a channel is > 0, HC is computed from **average hourly** volume
+    (manual total ÷ spread_hours) using ``required_hc_for_volume`` (same model as the grid).
+
+    If manual is 0, uses the sum of ``hc_required`` from ``df_full`` for that channel (optional team filter).
+    """
+    sh = max(1, int(spread_hours))
+    d = df_full.copy()
+    if "hc_required" not in d.columns:
+        d = add_metrics(d, p)
+    if team_filter != "all":
+        d = d[d["team"].astype(str) == str(team_filter)]
+    grid_case = float(d[d["channel"] == "case"]["hc_required"].sum())
+    grid_chat = float(d[d["channel"] == "chat"]["hc_required"].sum())
+
+    if float(manual_case_vol) > 1e-12:
+        hc_c = required_hc_for_volume(float(manual_case_vol) / float(sh), p, "case")
+        src_c = "Manual ÷ hours"
+    else:
+        hc_c = grid_case
+        src_c = "Grid sum"
+
+    if float(manual_chat_vol) > 1e-12:
+        hc_h = required_hc_for_volume(float(manual_chat_vol) / float(sh), p, "chat")
+        src_h = "Manual ÷ hours"
+    else:
+        hc_h = grid_chat
+        src_h = "Grid sum"
+
+    return hc_c, hc_h, src_c, src_h
+
+
 def required_hc_for_volume(
     volume: float,
     p: HCParams,

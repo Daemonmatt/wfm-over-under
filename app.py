@@ -27,6 +27,7 @@ from wfm_core import (
     merge_staff_by_hour,
     sample_pack_zip_bytes,
     shifts_to_hourly_counts,
+    summary_hc_case_chat,
     team_display_label,
     template_shifts,
     template_staff_by_channel,
@@ -171,6 +172,42 @@ with st.sidebar:
         sla_target=float(sla_target),
         service_time_sec=float(service_time_sec),
         chat_concurrency=float(chat_concurrency),
+    )
+
+    st.markdown("---")
+    st.markdown("### Overall HC — combined volume")
+    st.caption(
+        "Optional **day totals** by channel. Required HC uses your selected **Model** (Simple / Erlang / Hybrid) "
+        "and sidebar parameters. Totals are divided by **operating hours** to get average hourly volume. "
+        "Use **0** to ignore manual volume and show HC from the **hourly grid** only (respects **Team** filter)."
+    )
+    _ov1, _ov2 = st.columns(2)
+    with _ov1:
+        manual_case_vol = st.number_input(
+            "Case volume (combined)",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            key="wfm_manual_case_vol",
+            help="Total Case work units for the operating day.",
+        )
+    with _ov2:
+        manual_chat_vol = st.number_input(
+            "Chat volume (combined)",
+            min_value=0.0,
+            value=0.0,
+            step=1.0,
+            key="wfm_manual_chat_vol",
+            help="Total Chat work units for the operating day.",
+        )
+    spread_hours = st.number_input(
+        "Operating hours (spread)",
+        min_value=1,
+        max_value=24,
+        value=24,
+        step=1,
+        key="wfm_spread_hours",
+        help="Divide day totals by this many hours for average hourly workload before HC math.",
     )
 
     st.markdown("---")
@@ -421,7 +458,15 @@ with tab_grid:
     )
 
     st.markdown("##### Summary")
-    c1, c2, c3, c4 = st.columns(4)
+    hc_case, hc_chat, _src_case, _src_chat = summary_hc_case_chat(
+        df_full,
+        hc_params,
+        team_filter,
+        manual_case_vol,
+        manual_chat_vol,
+        spread_hours,
+    )
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
     c1.metric("Total volume (view)", f"{view_df['volume'].sum():,.1f}")
     c2.metric("Hours over-staffed", f"{(view_df['variance'] > 1e-6).sum()}")
     c3.metric("Hours under-staffed", f"{(view_df['variance'] < -1e-6).sum()}")
@@ -434,6 +479,16 @@ with tab_grid:
         )
     else:
         c4.metric("Largest gap (under)", "—")
+    c5.metric(
+        "Required HC (Case)",
+        f"{hc_case:,.2f}",
+        help="FTE from **Model** + sidebar inputs. Manual volume → average hourly; else sum of grid HC (Case).",
+    )
+    c6.metric(
+        "Required HC (Chat)",
+        f"{hc_chat:,.2f}",
+        help="FTE for Chat (includes ÷ concurrent chats). Manual volume → average hourly; else grid sum.",
+    )
 
     x1, x2 = st.columns(2)
     csv_out = df_full.to_csv(index=False).encode("utf-8")
